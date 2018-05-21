@@ -4,20 +4,36 @@ import functools
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from mytwitter import constants
+import mytwitter.config
 
-engine = create_engine(constants.db_url, echo=True)
+CONF = mytwitter.config.CONF
 
-SessionClass = sessionmaker(bind=engine, expire_on_commit=False)
+engine = None
+SessionClass = None
+
+
+def initialize():
+    global engine
+    global SessionClass
+
+    engine = create_engine(CONF.db.url,
+                           echo=CONF.db.logging.lower() == "true")
+    SessionClass = sessionmaker(bind=engine, expire_on_commit=False)
+
+
+def get_new_session():
+    return SessionClass()
+
 
 @contextlib.contextmanager
 def get_temp_session():
     try:
-        session = SessionClass()
+        session = get_new_session()
         yield session
     finally:
         session.commit()
         session.close()
+
 
 def ensure_session(f):
     @functools.wraps(f)

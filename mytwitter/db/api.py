@@ -1,41 +1,46 @@
-from mytwitter import constants
-from mytwitter.db import models
-from mytwitter.db import utils
+from sqlalchemy.orm import joinedload
 
-from sqlalchemy.orm import subqueryload, joinedload
+from mytwitter.db import models
+from mytwitter.db import session as session_utils
+
+
+def initialize():
+    session_utils.initialize()
 
 
 def create_tables():
-    models.DeclarativeBase.metadata.create_all(utils.engine)
+    models.BaseModel.metadata.create_all(session_utils.engine)
 
 
-@utils.ensure_session
+@session_utils.ensure_session
 def add_user(name, session=None):
     user = models.User(name=name)
-    session.add(user)
+    return user.save()
 
 
-@utils.ensure_session
+@session_utils.ensure_session
 def add_tweet(user_id, message, session=None):
     tweet = models.Tweet(message=message, user_id=user_id)
-    session.add(tweet)
+    return tweet.save()
 
 
-@utils.ensure_session
+@session_utils.ensure_session
 def get_users(session=None):
     query = session.query(models.User).\
-        options(joinedload(models.User.tweets)).\
-        options(joinedload('tweets.user'))
+        options(joinedload(models.User.tweets))
+    # You shouldn't use a joinedload in such situations.
+    # Alternative syntax:
+    # options(joinedload('tweets.user'))
     return query.order_by(models.User.id).all()
 
 
-@utils.ensure_session
+@session_utils.ensure_session
 def get_user(user_id=None, session=None):
-    query = session.query(models.User).options(joinedload(models.User.tweets))
+    query = session.query(models.User)
     return query.filter_by(id=user_id).one()
 
 
-@utils.ensure_session
+@session_utils.ensure_session
 def get_tweets(user_id=None, session=None):
     query = session.query(models.Tweet).options(
                     joinedload(models.Tweet.user))
