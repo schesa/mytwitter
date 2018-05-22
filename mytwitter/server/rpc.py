@@ -1,6 +1,7 @@
 import json
 import pika
 
+
 import mytwitter.config
 from mytwitter.db import api as db_api
 from mytwitter.db import models
